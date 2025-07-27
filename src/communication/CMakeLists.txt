@@ -14,8 +14,12 @@ find_package(ros2_utils REQUIRED)
 add_executable(wifi_control src/wifi_control.cpp)
 ament_target_dependencies(wifi_control rclcpp std_msgs ros2_utils)
 
+add_executable(io_reeman src/io_reeman.cpp)
+ament_target_dependencies(io_reeman rclcpp std_msgs ros2_utils)
+
 install(TARGETS
   wifi_control
+  io_reeman
   DESTINATION lib/${PROJECT_NAME}
 )
 
