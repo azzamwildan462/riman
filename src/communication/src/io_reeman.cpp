@@ -3,6 +3,9 @@
 #include "ros2_utils/global_definitions.hpp"
 #include "ros2_utils/simple_fsm.hpp"
 
+#include "communication/nlohmann_json.hpp"
+#include "cpr/cpr.h"
+
 #define ENDPOINT_GET_POSE "/reeman/pose"
 #define ENDPOINT_GET_MODE "/reeman/get_mode"
 #define ENDPOINT_GET_PWR_MGMT "/reeman/base_encode"
@@ -37,7 +40,7 @@ public:
     MachineState fsm_robot;
 
     // Configs
-    std::string reeman_controller_ip = "";
+    std::string reeman_controller_ip = "10.7.101.102";
     int threshold_minimum_request_period_ms = 1000; // Minimum period between requests in milliseconds
     float threshold_minimum_battery_soc = 20;
 
@@ -46,6 +49,7 @@ public:
     float final_pose_y = 0.0f;
     float final_pose_yaw = 0.0f;
     float battery_soc = 0.0f;
+    uint8_t emergency_button = 0;
     std::vector<route_t> route_list;
     uint8_t current_route_index = 0;
 
@@ -73,7 +77,8 @@ public:
             rclcpp::shutdown();
         }
 
-        fsm_robot.value = FSM_SAFEOP;
+        // fsm_robot.value = FSM_SAFEOP;
+        fsm_robot.value = FSM_INIT;
 
         tim_routine = this->create_wall_timer(std::chrono::milliseconds(20), std::bind(&IOReeman::callback_routine, this));
 
@@ -126,12 +131,35 @@ public:
 
     // ===================================================================================================================
 
+    void fetchData() {
+        cpr::Response res = cpr::Get(cpr::Url(build_url(ENDPOINT_GET_POSE)));
+        try {
+            nlohmann::json json_response;
+            json_response = nlohmann::json::parse(res.text);
+    
+            final_pose_x = json_response["x"];
+            final_pose_y = json_response["y"];
+            final_pose_yaw = json_response["theta"];
+            
+            res = cpr::Get(cpr::Url(build_url(ENDPOINT_GET_PWR_MGMT)));
+            json_response = nlohmann::json::parse(res.text);
+            emergency_button = json_response["emergencyButton"];
+    
+            printf("Final Pose: x=%.2f, y=%.2f, yaw=%.2f\n", final_pose_x, final_pose_y, final_pose_yaw);
+            printf("Emergency Button: %d\n", emergency_button);
+        } catch (const std::exception &e) {
+            logger.error("Error fetching Data: %s", e.what());
+            return;
+        }
+    }
+
     void callback_routine()
     {
         switch (fsm_robot.value)
         {
         case FSM_INIT:
         {
+            fetchData();
             break;
         }
 
