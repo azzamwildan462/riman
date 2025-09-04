@@ -1,0 +1,1 @@
+ip.dst == 10.7.101.102 && http.request.uri != "/reeman/base" &&  http.request.uri != "/reeman/laser" &&  http.request.uri != "/reeman/pose" &&  http.request.uri != "/reeman/imu" &&  http.request.uri != "/reeman/base_encode" && http.request.uri != "/reeman/speed"

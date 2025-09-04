@@ -10,6 +10,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(ros2_utils REQUIRED)
+find_package(ros2_interface REQUIRED)
+find_package(ds4_driver_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 add_subdirectory(../../cpr ${CMAKE_CURRENT_BINARY_DIR}/cpr)
 include_directories(include)
@@ -18,7 +22,7 @@ add_executable(wifi_control src/wifi_control.cpp)
 ament_target_dependencies(wifi_control rclcpp std_msgs ros2_utils)
 
 add_executable(io_reeman src/io_reeman.cpp)
-ament_target_dependencies(io_reeman rclcpp std_msgs ros2_utils)
+ament_target_dependencies(io_reeman rclcpp std_msgs ros2_utils ds4_driver_msgs ament_index_cpp ros2_interface)
 target_link_libraries(io_reeman cpr::cpr)
 
 install(TARGETS

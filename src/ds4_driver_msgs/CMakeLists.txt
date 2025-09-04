@@ -1,44 +1,24 @@
 cmake_minimum_required(VERSION 3.8)
-project(ros2_interface)
+project(ds4_driver_msgs)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
-set(var_dependencies 
-  ament_cmake
-  rclcpp
-  std_msgs
-  geometry_msgs
-  rosidl_default_generators
-)
+find_package(ament_cmake REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
-foreach(var_dependency ${var_dependencies})
-  find_package(${var_dependency} REQUIRED)
-endforeach()
-
-set(msg_files
-    msg/PointArray.msg
-    msg/Robot.msg
-    msg/RobotArray.msg
-    msg/Terminal.msg
-    msg/TerminalArray.msg
-    )
-set(srv_files 
-    srv/Dummy.srv
-    srv/RobotReq.srv
-    srv/TerminalReq.srv
-    )
-
-rosidl_generate_interfaces(
-  ${PROJECT_NAME}
-  ${msg_files}
-  ${srv_files}
-  DEPENDENCIES
-  ${var_dependencies})
-
-ament_export_dependencies(rosidl_default_runtime ${var_dependencies})
+rosidl_generate_interfaces(${PROJECT_NAME}
+    "msg/Feedback.msg"
+    "msg/Status.msg"
+    "msg/Report.msg"
+    "msg/Trackpad.msg"
+    DEPENDENCIES std_msgs builtin_interfaces sensor_msgs
+    LIBRARY_NAME ${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

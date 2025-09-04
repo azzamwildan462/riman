@@ -31,6 +31,32 @@ def generate_launch_description():
         respawn=True,
     )
 
+    io_reeman = Node(
+        package='communication',
+        executable='io_reeman',
+        name='io_reeman',
+        parameters=[
+            {
+                "max_vx": 1.0,
+                "max_vth": 1.0,
+                "reeman_controller_ip": "192.168.1.121",
+                "configs_path": path_config,
+            },
+        ],
+        output='screen',
+        respawn=True,
+    )
+
+    ds4_driver = Node(
+        package='ds4_driver',
+        executable='ds4_driver_node.py',
+        name='ds4_driver',
+        output='screen',
+        respawn=True,
+        remappings=[
+            ('/status', '/ds4/status')]
+    )
+
     wifi_control = Node(
         package="communication",
         executable="wifi_control",
@@ -97,7 +123,7 @@ def generate_launch_description():
         [
             # rosapi_node,
             # ui_server,
-            # rosbridge_server, 
+            rosbridge_server, 
 
             # telemetry,
 
@@ -105,6 +131,8 @@ def generate_launch_description():
 
             # keyboard_input,
 
-            wifi_control,
+            # wifi_control,
+            io_reeman,
+            # ds4_driver,
         ]
     )
