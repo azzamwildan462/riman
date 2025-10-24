@@ -5,6 +5,7 @@
 #include "ds4_driver_msgs/msg/status.hpp"
 #include <cmath>
 
+#include "std_msgs/msg/int16.hpp"
 #include "ros2_interface/msg/robot.hpp"
 #include "ros2_interface/msg/robot_array.hpp"
 #include "ros2_interface/msg/terminal.hpp"
@@ -16,6 +17,16 @@
 #include "cpr/cpr.h"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include <boost/algorithm/string.hpp>
+
+#include "math.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "sys/ioctl.h"
+#include "termios.h"
+#include <sys/time.h>
+#include <unistd.h>
+#include <string>
+#include <stdarg.h>
 
 #define ENDPOINT_GET_POSE "/reeman/pose"
 #define ENDPOINT_GET_MODE "/reeman/get_mode"
@@ -127,8 +138,8 @@ public:
     MachineState fsm_robot;
 
     // Configs
-    // std::string reeman_controller_ip = "10.7.101.102";
-    std::string reeman_controller_ip = "";
+    std::string reeman_controller_ip = "10.7.101.213";
+    // std::string reeman_controller_ip = "";
 
     int threshold_minimum_request_period_ms = 1000; // Minimum period between requests in milliseconds
     float threshold_minimum_battery_soc = 20;
@@ -147,6 +158,10 @@ public:
     uint64_t last_time_request_counter_ms = 0;
     bool request_to_start = false;
     bool request_to_stop = false;
+
+    // KBHIT
+    rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr sub_keyboard_hit;
+    int16_t key_val;
 
     // ds4 vars
     rclcpp::Subscription<ds4_driver_msgs::msg::Status>::SharedPtr sub_ds4;
@@ -216,24 +231,27 @@ public:
         load_terminals();
         load_robot_config();
 
-        // for (const auto& terminal : all_terminal.terminals) {
-        //     logger.info("Terminal ID: %d, Type: %d, Target Pose X: %.2f, Y: %.2f, Theta: %.2f",
-        //         terminal.terminal_id, terminal.terminal_type,
-        //         terminal.target_pose_x, terminal.target_pose_y, terminal.target_pose_theta);
-        // }
+        for (const auto& terminal : all_terminal.terminals) {
+            logger.info("Terminal ID: %d, Type: %d, Target Pose X: %.2f, Y: %.2f, Theta: %.2f",
+                terminal.terminal_id, terminal.terminal_type,
+                terminal.target_pose_x, terminal.target_pose_y, terminal.target_pose_theta);
+        }
 
-        // for (const auto& terminal : current_terminals) {
-        //     logger.info("current_robot_terminals: target_pose_x: %.2f target_pose_y: %.2f target_pose_theta: .%2f", terminal.target_pose_x, terminal.target_pose_y, terminal.target_pose_theta);
-        // }
+        for (const auto& terminal : current_terminals) {
+            logger.info("current_robot_terminals: target_pose_x: %.2f target_pose_y: %.2f target_pose_theta: .%2f", terminal.target_pose_x, terminal.target_pose_y, terminal.target_pose_theta);
+        }
 
-        // for (const auto& route : current_robot_config.routes) {
-        //     logger.info("robot_routes: %d", route);
-        // }
+        for (const auto& route : current_robot_config.routes) {
+            logger.info("robot_routes: %d", route);
+        }
 
-        // fsm_robot.value = FSM_SAFEOP;
-        fsm_robot.value = FSM_INIT;
+        fsm_robot.value = FSM_SAFEOP;
+        // fsm_robot.value = FSM_INIT;
 
-        // sub_ds4 = this->create_subscription<ds4_driver_msgs::msg::Status>("/ds4/status", 1, std::bind(&IOReeman::callback_ds4, this, std::placeholders::_1));
+        sleep(2);
+        sub_ds4 = this->create_subscription<ds4_driver_msgs::msg::Status>("/ds4/status", 1, std::bind(&IOReeman::callback_ds4, this, std::placeholders::_1));
+        sub_keyboard_hit = this->create_subscription<std_msgs::msg::Int16>("/key_pressed", 1, std::bind(&IOReeman::callback_kbhit, this, std::placeholders::_1));
+
         sub_terminal_update = this->create_subscription<ros2_interface::msg::TerminalArray>("/basestation/terminal_update", 1, std::bind(&IOReeman::callback_terminal_update, this, std::placeholders::_1));
 
         pub_robot_array = this->create_publisher<ros2_interface::msg::RobotArray>("/communication/robot_array", 1);
@@ -250,6 +268,68 @@ public:
     {
     }
 
+    void callback_kbhit(std_msgs::msg::Int16::SharedPtr msg) {
+        switch (msg->data) {
+            case 'w':
+                key_val = 'w';
+                break;
+            case 's':
+                key_val = 's';
+                break;
+            case 'a':
+                key_val = 'a';
+                break;
+            case 'd':
+                key_val = 'd';
+                break;
+            case ' ':
+                key_val = ' ';
+                break;
+            case '1':
+                key_val = '1';
+                break;
+            case '9':
+                key_val = '9';
+                break;
+            case '2':
+                key_val = '2';
+                break;
+        }
+
+        logger.info("Key pressed: %c", key_val);
+    }
+
+    void keyboard_handler() {
+        switch(key_val) {
+            case 'w':
+                send_speed_command(0.4, 0);
+                break;
+            case 's':
+                send_speed_command(-0.4, 0);
+                break;
+            case 'a':
+                send_speed_command(0, 0.3);
+                break;
+            case 'd':
+                send_speed_command(0, -0.3);
+                break;
+            case ' ':
+                send_stop_command();
+                break;
+            case '1':
+                robot_operation_status = 1;
+                break;
+            case '9':
+                robot_operation_status = 9;
+                break;
+            case '2':
+                robot_operation_status = 2;
+                break;
+            case '3':
+                robot_operation_status = 3;
+                break;
+        }
+    }
     // ===================================================================================================================
     
     void callback_srv_terminal_req(const ros2_interface::srv::TerminalReq::Request::SharedPtr request, ros2_interface::srv::TerminalReq::Response::SharedPtr response) {
@@ -407,8 +487,8 @@ public:
                 return true; 
             } 
 
-            // printf("Moving to x: %.2f, y: %.2f, yaw: %.2f\n", target_x, target_y, target_yaw);
-            // printf("Still moving to point: target error = %.2f\n", target_error_position);
+            printf("Moving to x: %.2f, y: %.2f, yaw: %.2f\n", target_x, target_y, target_yaw);
+            printf("Still moving to point: target error = %.2f\n", target_error_position);
         }
         
         return false;
@@ -476,7 +556,7 @@ public:
 
         get_motion_nav_status(current_robot_config.nav_status, &current_robot_config.distance_to_goal);
     }
-
+    
     void callback_routine()
     {
         switch (fsm_robot.value)
@@ -508,8 +588,9 @@ public:
             // printf("BUTTON PREVIOUS X: %d\n", ds4_previous_status.button_cross);
             // printf("============================================\n");
 
-            ds4_handler();
-            get_route_lists();
+            // ds4_handler();
+            keyboard_handler();
+            // get_route_lists();
             operation_manager();
             break;
         }
@@ -667,9 +748,8 @@ public:
                 printf("Robot operation status: 0\n");
                 break;
             case 1:
-                if (motion_to_point(2.35, 2, 1.61))
+                if (motion_to_point(-1, 0, 0))
                 {
-                    // printf("Change to 11\n");
                     // robot_operation_status = 11;
                 }
                 break;

@@ -39,7 +39,7 @@ def generate_launch_description():
             {
                 "max_vx": 1.0,
                 "max_vth": 1.0,
-                "reeman_controller_ip": "192.168.1.121",
+                "reeman_controller_ip": "10.7.101.213",
                 "configs_path": path_config,
             },
         ],
@@ -114,8 +114,7 @@ def generate_launch_description():
         executable='keyboard_input',
         name='keyboard_input',
         output='screen',
-        respawn=True,
-        prefix=['xterm -e'],
+        prefix=['gnome-terminal --'],
     )
 
 
@@ -123,16 +122,16 @@ def generate_launch_description():
         [
             # rosapi_node,
             # ui_server,
-            rosbridge_server, 
+            # rosbridge_server, 
 
             # telemetry,
 
             # master,
 
-            # keyboard_input,
+            keyboard_input,
 
             # wifi_control,
             io_reeman,
-            # ds4_driver,
+            ds4_driver,
         ]
     )
