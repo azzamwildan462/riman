@@ -288,9 +288,6 @@ public:
             case '1':
                 key_val = '1';
                 break;
-            case '9':
-                key_val = '9';
-                break;
             case '2':
                 key_val = '2';
                 break;
@@ -318,9 +315,6 @@ public:
                 break;
             case '1':
                 robot_operation_status = 1;
-                break;
-            case '9':
-                robot_operation_status = 9;
                 break;
             case '2':
                 robot_operation_status = 2;

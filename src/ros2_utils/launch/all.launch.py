@@ -31,6 +31,14 @@ def generate_launch_description():
         respawn=True,
     )
 
+    hand_track = Node(
+        package='vision',
+        executable='hand_track.py',
+        name='hand_track',
+        output='screen',
+        respawn=True,
+    )
+
     io_reeman = Node(
         package='communication',
         executable='io_reeman',
@@ -121,14 +129,15 @@ def generate_launch_description():
     return LaunchDescription(
         [
             # rosapi_node,
-            # ui_server,
-            # rosbridge_server, 
+            ui_server,
+            rosbridge_server,
+            # hand_track,
 
             # telemetry,
 
             # master,
 
-            keyboard_input,
+            # keyboard_input,
 
             # wifi_control,
             io_reeman,
